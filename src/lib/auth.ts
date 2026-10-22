@@ -2,7 +2,6 @@ import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import DOMPurify from "isomorphic-dompurify";
 
 const JWT_SECRET = process.env.JWT_SECRET || "super-secret-placeholder-for-dev-only";
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
@@ -22,7 +21,7 @@ export async function createAdminToken(username: string): Promise<string> {
   return await new SignJWT({ username, role: "admin" })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("2h") // Token expires in 2 hours
+    .setExpirationTime("2h")
     .sign(secret);
 }
 
@@ -49,7 +48,7 @@ export function setAuthCookie(response: NextResponse, token: string) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    maxAge: 7200, // 2 hours
+    maxAge: 7200,
     path: "/",
   });
 }
@@ -59,13 +58,19 @@ export function clearAuthCookie(response: NextResponse) {
   response.cookies.delete("admin_token");
 }
 
-// 6. Input Sanitization
+// 6. Input Sanitization - simple regex-based, no external deps
 export function sanitizeString(input: string): string {
-  // Use isomorphic-dompurify for safe stripping of potential XSS
-  return DOMPurify.sanitize(input, {
-    ALLOWED_TAGS: [], // Strip all HTML tags
-    ALLOWED_ATTR: [],
-  });
+  if (typeof input !== "string") return "";
+  // Strip all HTML tags and decode common entities
+  return input
+    .replace(/<[^>]*>/g, "") // Remove HTML tags
+    .replace(/</g, "<")
+    .replace(/>/g, ">")
+    .replace(/&/g, "&")
+    .replace(/"/g, '"')
+    .replace(/'/g, "'")
+    .replace(/&#x2F;/g, "/")
+    .trim();
 }
 
 // 7. Simple In-Memory Rate Limiter

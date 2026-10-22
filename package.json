@@ -14,7 +14,6 @@
     "bcryptjs": "^3.0.3",
     "dompurify": "^3.4.17",
     "framer-motion": "^14.5.0",
-    "isomorphic-dompurify": "^4.6.0",
     "jose": "^6.2.13",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.61.0",
