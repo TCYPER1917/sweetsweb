@@ -10,8 +10,7 @@ const nextConfig: NextConfig = {
       },
     },
   },
-  // حل مشكلة توافقية jsdom مع خوادم Vercel السحابية
   serverExternalPackages: ["jsdom"],
 };
-
+/*blalblalblalbllfafsalfj*/
 export default nextConfig;
