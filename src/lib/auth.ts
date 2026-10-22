@@ -47,7 +47,7 @@ export function setAuthCookie(response: NextResponse, token: string) {
   response.cookies.set("admin_token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
     maxAge: 7200,
     path: "/",
   });
