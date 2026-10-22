@@ -58,18 +58,12 @@ export function clearAuthCookie(response: NextResponse) {
   response.cookies.delete("admin_token");
 }
 
-// 6. Input Sanitization - simple regex-based, no external deps
+// 6. Input Sanitization - strips HTML tags without extra dependencies
 export function sanitizeString(input: string): string {
   if (typeof input !== "string") return "";
-  // Strip all HTML tags and decode common entities
   return input
-    .replace(/<[^>]*>/g, "") // Remove HTML tags
-    .replace(/</g, "<")
-    .replace(/>/g, ">")
-    .replace(/&/g, "&")
-    .replace(/"/g, '"')
-    .replace(/'/g, "'")
-    .replace(/&#x2F;/g, "/")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\u0000/g, "")
     .trim();
 }
 

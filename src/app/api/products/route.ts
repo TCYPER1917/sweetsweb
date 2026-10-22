@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession, sanitizeString } from "@/lib/auth";
 import { createServiceClient } from "@/lib/supabase/service";
-import { Product } from "@/types";
+import type { Product } from "@/types";
 
-const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&w=800&q=80";
+const DEFAULT_IMAGE =
+  "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&w=800&q=80";
 
 function toProduct(row: any): Product {
   return {
@@ -11,10 +12,10 @@ function toProduct(row: any): Product {
     name: row.name,
     category: row.category,
     price: Number(row.price),
-    unit: row.unit,
-    description: row.description,
+    unit: row.unit || "₪",
+    description: row.description || "",
     image_url: row.image_url || DEFAULT_IMAGE,
-    is_available: row.is_available,
+    is_available: row.is_available !== false,
     created_at: row.created_at,
   };
 }
@@ -43,11 +44,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    return NextResponse.json(data.map(toProduct), {
+    return NextResponse.json((data || []).map(toProduct), {
       status: 200,
-      headers: {
-        "Cache-Control": "public, s-maxage=10, stale-while-revalidate=59",
-      },
+      headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
     console.error("GET /api/products error:", error);
@@ -163,7 +162,16 @@ export async function PUT(req: NextRequest) {
 
     const updates: Record<string, any> = {};
 
-    if (body.name !== undefined) updates.name = sanitizeString(body.name);
+    if (body.name !== undefined) {
+      const name = sanitizeString(body.name);
+      if (!name || name.length < 2) {
+        return NextResponse.json(
+          { error: "اسم الصنف مطلوب ويجب أن يحتوي على حرفين على الأقل" },
+          { status: 400 }
+        );
+      }
+      updates.name = name;
+    }
     if (body.category !== undefined) updates.category = sanitizeString(body.category);
     if (body.description !== undefined) updates.description = sanitizeString(body.description);
     if (body.image_url !== undefined) updates.image_url = sanitizeString(body.image_url);
@@ -196,19 +204,20 @@ export async function PUT(req: NextRequest) {
       .update(updates)
       .eq("id", id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Supabase PUT product error:", error);
-      if (error.code === "PGRST116") {
-        return NextResponse.json(
-          { error: "الصنف غير موجود أو تعذر تحديثه" },
-          { status: 404 }
-        );
-      }
       return NextResponse.json(
         { error: "حدث خطأ أثناء تعديل الصنف" },
         { status: 500 }
+      );
+    }
+
+    if (!data) {
+      return NextResponse.json(
+        { error: "الصنف غير موجود أو تعذر تحديثه" },
+        { status: 404 }
       );
     }
 
@@ -259,13 +268,24 @@ export async function DELETE(req: NextRequest) {
 
     const supabase = createServiceClient();
 
-    const { error } = await supabase.from("products").delete().eq("id", id);
+    const { data, error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", id)
+      .select("id");
 
     if (error) {
       console.error("Supabase DELETE product error:", error);
       return NextResponse.json(
-        { error: "حدث خطأ أثناء حذف الصنف" },
+        { error: "تعذر حذف الصنف من قاعدة البيانات" },
         { status: 500 }
+      );
+    }
+
+    if (!data || data.length === 0) {
+      return NextResponse.json(
+        { error: "الصنف غير موجود أو تم حذفه مسبقاً" },
+        { status: 404 }
       );
     }
 

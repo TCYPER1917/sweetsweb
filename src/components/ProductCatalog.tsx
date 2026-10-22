@@ -1,34 +1,39 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { MessageCircle, Search, Sparkles, Filter, Check, AlertCircle } from "lucide-react";
-import { Product } from "@/types";
+import { MessageCircle, Search, Sparkles, AlertCircle } from "lucide-react";
+import type { Product } from "@/types";
 
 interface ProductCatalogProps {
   initialProducts?: Product[];
+  categories?: string[];
+  title?: string;
+  subtitle?: string;
+  badge?: string;
+  whatsapp?: string;
+  shopName?: string;
 }
 
-const CATEGORIES = [
-  { id: "all", label: "جميع الأصناف" },
-  { id: "كنافة", label: "كنافة وكلاج" },
-  { id: "حلويات شرقية", label: "حلويات شرقية" },
-  { id: "مشروبات ساخنة", label: "مشروبات ساخنة" },
-];
-
-export default function ProductCatalog({ initialProducts = [] }: ProductCatalogProps) {
+export default function ProductCatalog({
+  initialProducts = [],
+  categories = [],
+  title = "اختر ما تشتهيه من أطيب الحلويات",
+  subtitle = "",
+  badge = "قائمة الأصناف الطازجة",
+  whatsapp = "972569553350",
+  shopName = "حلويات أبو بشار",
+}: ProductCatalogProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch updated products from API on mount
   useEffect(() => {
     async function loadProducts() {
       try {
-        const res = await fetch("/api/products");
+        const res = await fetch("/api/products", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
-          if (data && data.length > 0) {
+          if (Array.isArray(data)) {
             setProducts(data);
           }
         }
@@ -39,66 +44,81 @@ export default function ProductCatalog({ initialProducts = [] }: ProductCatalogP
     loadProducts();
   }, []);
 
-  // Filter products by category and search query
+  const categoryOptions = useMemo(() => {
+    const fromSettings = categories.filter(Boolean);
+    const fromProducts = Array.from(new Set(products.map((p) => p.category).filter(Boolean)));
+    const merged = Array.from(new Set([...fromSettings, ...fromProducts]));
+    return merged;
+  }, [categories, products]);
+
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const matchesCategory =
         selectedCategory === "all" || product.category === selectedCategory;
+      const q = searchQuery.toLowerCase();
       const matchesSearch =
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase());
+        !q ||
+        product.name.toLowerCase().includes(q) ||
+        (product.description || "").toLowerCase().includes(q);
       return matchesCategory && matchesSearch;
     });
   }, [products, selectedCategory, searchQuery]);
 
-  // Generate WhatsApp prefilled message
   const getWhatsAppLink = (product: Product) => {
-    const message = `مرحباً حلويات أبو بشار، أرغب بطلب:\n- الصنف: ${product.name}\n- السعر: ${product.price} ${product.unit || "شيكل"}\n- الرجاء تزويدي بالتفاصيل والتوصيل.`;
-    return `https://wa.me/972569553350?text=${encodeURIComponent(message)}`;
+    const message = `مرحباً ${shopName}، أرغب بطلب:\n- الصنف: ${product.name}\n- السعر: ${product.price} ${product.unit || "شيكل"}\n- الرجاء تزويدي بالتفاصيل والتوصيل.`;
+    return `https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`;
   };
 
   return (
     <section id="catalog" className="py-20 bg-white relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-4">
-          <div className="inline-flex items-center gap-2 bg-[#4A0E17]/10 text-[#4A0E17] px-4 py-1.5 rounded-full text-xs font-bold border border-[#4A0E17]/20">
-            <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span>قائمة الأصناف الطازجة</span>
-          </div>
+          {badge && (
+            <div className="inline-flex items-center gap-2 bg-[#4A0E17]/10 text-[#4A0E17] px-4 py-1.5 rounded-full text-xs font-bold border border-[#4A0E17]/20">
+              <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span>{badge}</span>
+            </div>
+          )}
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#29060B]">
-            اختر ما تشتهيه من أطيب الحلويات
+            {title}
           </h2>
 
-          <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
-            جميع أصنافنا تُحضر يومياً بأفخر أنواع السمن البلدي والمكسرات الطازجة والجبنة البلدية. اضغط على أي صنف للطلب السريع عبر واتساب.
-          </p>
+          {subtitle && (
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">{subtitle}</p>
+          )}
         </div>
 
-        {/* Filter and Search Bar */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-10 bg-[#FAF7F2] p-4 rounded-2xl border border-[#D4AF37]/20 shadow-sm">
-          {/* Categories Buttons */}
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            {CATEGORIES.map((cat) => {
-              const active = selectedCategory === cat.id;
+            <button
+              onClick={() => setSelectedCategory("all")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                selectedCategory === "all"
+                  ? "bg-[#4A0E17] text-[#F4E5A1] shadow-md border border-[#D4AF37]"
+                  : "bg-white text-gray-700 hover:bg-[#FAF7F2] border border-gray-200"
+              }`}
+            >
+              جميع الأصناف
+            </button>
+            {categoryOptions.map((cat) => {
+              const active = selectedCategory === cat;
               return (
                 <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
                   className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
                     active
                       ? "bg-[#4A0E17] text-[#F4E5A1] shadow-md border border-[#D4AF37]"
                       : "bg-white text-gray-700 hover:bg-[#FAF7F2] border border-gray-200"
                   }`}
                 >
-                  {cat.label}
+                  {cat}
                 </button>
               );
             })}
           </div>
 
-          {/* Search Input */}
           <div className="relative w-full md:w-72">
             <Search className="w-4 h-4 text-gray-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
@@ -111,7 +131,6 @@ export default function ProductCatalog({ initialProducts = [] }: ProductCatalogP
           </div>
         </div>
 
-        {/* Products Grid */}
         {filteredProducts.length === 0 ? (
           <div className="text-center py-16 bg-[#FAF7F2] rounded-3xl border border-dashed border-[#D4AF37]/40 max-w-md mx-auto">
             <AlertCircle className="w-12 h-12 text-[#D4AF37] mx-auto mb-3" />
@@ -129,25 +148,21 @@ export default function ProductCatalog({ initialProducts = [] }: ProductCatalogP
                   key={product.id}
                   className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-[#D4AF37]/50 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
                 >
-                  {/* Image Container */}
                   <div className="relative h-48 sm:h-52 w-full overflow-hidden bg-gradient-to-br from-[#FAF7F2] to-gray-100">
                     <img
                       src={product.image_url}
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       onError={(e) => {
-                        // Fallback image if broken
                         (e.target as HTMLImageElement).src =
                           "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&w=600&q=80";
                       }}
                     />
 
-                    {/* Category Tag */}
                     <div className="absolute top-3 right-3 bg-[#4A0E17]/90 backdrop-blur-md text-[#F4E5A1] text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#D4AF37]/30">
                       {product.category}
                     </div>
 
-                    {/* Availability Tag */}
                     {!isAvailable && (
                       <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center">
                         <span className="bg-red-600 text-white font-bold text-xs px-3 py-1.5 rounded-full shadow">
@@ -157,7 +172,6 @@ export default function ProductCatalog({ initialProducts = [] }: ProductCatalogP
                     )}
                   </div>
 
-                  {/* Body Content */}
                   <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                     <div>
                       <div className="flex items-start justify-between gap-2 mb-1">
@@ -170,7 +184,6 @@ export default function ProductCatalog({ initialProducts = [] }: ProductCatalogP
                       </p>
                     </div>
 
-                    {/* Price & Action */}
                     <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
                       <div>
                         <span className="text-xs text-gray-400 block">السعر</span>
@@ -184,14 +197,13 @@ export default function ProductCatalog({ initialProducts = [] }: ProductCatalogP
                         </div>
                       </div>
 
-                      {/* WhatsApp Order Button */}
                       <a
                         href={isAvailable ? getWhatsAppLink(product) : undefined}
                         target={isAvailable ? "_blank" : undefined}
                         rel={isAvailable ? "noopener noreferrer" : undefined}
                         className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                           isAvailable
-                            ? "bg-[#25D366] hover:bg-[#1fa952] text-white shadow hover:shadow-md hover:scale-102"
+                            ? "bg-[#25D366] hover:bg-[#1fa952] text-white shadow hover:shadow-md"
                             : "bg-gray-200 text-gray-400 cursor-not-allowed"
                         }`}
                         title={isAvailable ? "اطلب عبر الواتساب" : "غير متوفر حالياً"}

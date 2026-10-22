@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Phone, Menu, X, Sparkles, Shield } from "lucide-react";
 
-export default function Header() {
+export default function Header({
+  name = "حلويات أبو بشار",
+  phone = "",
+}: {
+  name?: string;
+  phone?: string;
+}) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -33,7 +39,6 @@ export default function Header() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
-          {/* Logo / Brand Name */}
           <Link href="/" className="flex items-center gap-3 group">
             <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-[#D4AF37] to-[#F4E5A1] p-0.5 shadow-md group-hover:scale-105 transition-transform">
               <div className="w-full h-full bg-[#4A0E17] rounded-full flex items-center justify-center">
@@ -42,7 +47,7 @@ export default function Header() {
             </div>
             <div>
               <span className="block text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-[#F4E5A1] transition-colors">
-                حلويات أبو بشار
+                {name}
               </span>
               <span className="block text-xs text-[#D4AF37] font-medium tracking-wide">
                 طعم الأصالة والمذاق الفاخر
@@ -50,29 +55,28 @@ export default function Header() {
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.href}
-                className="text-white/90 hover:text-[#D4AF37] text-sm font-medium transition-colors hover:scale-105 transform"
+                className="text-white/90 hover:text-[#D4AF37] text-sm font-medium transition-colors"
               >
                 {link.name}
               </a>
             ))}
           </nav>
 
-          {/* Quick Call & Admin Action */}
           <div className="hidden sm:flex items-center gap-4">
-            <a
-              href="tel:0569553350"
-              className="flex items-center gap-2 bg-[#4A0E17] hover:bg-[#62141F] text-[#F4E5A1] px-4 py-2 rounded-full border border-[#D4AF37]/40 text-xs font-semibold transition-all shadow-sm hover:shadow"
-            >
-              <Phone className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span dir="ltr">0569-553350</span>
-            </a>
-
+            {phone && (
+              <a
+                href={`tel:${phone.replace(/-/g, "")}`}
+                className="flex items-center gap-2 bg-[#4A0E17] hover:bg-[#62141F] text-[#F4E5A1] px-4 py-2 rounded-full border border-[#D4AF37]/40 text-xs font-semibold transition-all shadow-sm hover:shadow"
+              >
+                <Phone className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <span dir="ltr">{phone}</span>
+              </a>
+            )}
             <Link
               href="/admin/login"
               className="flex items-center gap-1.5 text-xs text-white/70 hover:text-[#D4AF37] px-3 py-1.5 rounded-md hover:bg-white/5 transition-colors"
@@ -83,15 +87,16 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Mobile menu toggle */}
           <div className="flex sm:hidden items-center gap-2">
-            <a
-              href="tel:0569553350"
-              className="p-2 bg-[#4A0E17] text-[#D4AF37] rounded-full border border-[#D4AF37]/30"
-              aria-label="اتصل بنا"
-            >
-              <Phone className="w-4 h-4" />
-            </a>
+            {phone && (
+              <a
+                href={`tel:${phone.replace(/-/g, "")}`}
+                className="p-2 bg-[#4A0E17] text-[#D4AF37] rounded-full border border-[#D4AF37]/30"
+                aria-label="اتصل بنا"
+              >
+                <Phone className="w-4 h-4" />
+              </a>
+            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-white hover:text-[#D4AF37] rounded-md focus:outline-none"
@@ -103,7 +108,6 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile dropdown menu */}
       {mobileMenuOpen && (
         <div className="sm:hidden bg-[#380A11] border-b border-[#D4AF37]/30 px-4 pt-3 pb-6 mt-3 space-y-3 shadow-xl">
           {navLinks.map((link) => (
@@ -117,13 +121,6 @@ export default function Header() {
             </a>
           ))}
           <div className="pt-2 flex flex-col gap-2">
-            <a
-              href="tel:0569553350"
-              className="flex items-center justify-center gap-2 bg-[#4A0E17] text-[#F4E5A1] py-2.5 rounded-lg border border-[#D4AF37]/40 text-sm font-semibold"
-            >
-              <Phone className="w-4 h-4 text-[#D4AF37]" />
-              <span>اتصل: 0569-553350</span>
-            </a>
             <Link
               href="/admin/login"
               onClick={() => setMobileMenuOpen(false)}
